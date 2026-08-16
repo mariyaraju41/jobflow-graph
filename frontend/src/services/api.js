@@ -9,7 +9,7 @@ import axios from "axios";
 
 const api = axios.create({
 
-  baseURL: "http://localhost:1918/api",
+  baseURL: "https://jobflow-graph.onrender.com",
 
   headers: {
     "Content-Type": "application/json"

@@ -9,7 +9,7 @@ import axios from "axios";
 
 const api = axios.create({
 
-  baseURL: "https://jobflow-graph.onrender.com",
+  baseURL: "https://jobflow-graph.onrender.com/api",
 
   headers: {
     "Content-Type": "application/json"
@@ -65,6 +65,8 @@ api.interceptors.request.use(
 
 /*
  * REGISTER
+ *
+ * POST /api/auth/register
  */
 
 export const register = async (
@@ -83,6 +85,8 @@ export const register = async (
 
 /*
  * LOGIN
+ *
+ * POST /api/auth/login
  */
 
 export const login = async (
@@ -138,6 +142,7 @@ export const logout = () => {
     "jobflow_token"
   );
 
+
   localStorage.removeItem(
     "candidateId"
   );
@@ -154,6 +159,8 @@ export const logout = () => {
 
 /*
  * GET PROFILE
+ *
+ * GET /api/profile/{candidateId}
  */
 
 export const getProfile = async (
@@ -171,6 +178,8 @@ export const getProfile = async (
 
 /*
  * UPDATE PROFILE
+ *
+ * PUT /api/profile/{candidateId}
  */
 
 export const updateProfile = async (
@@ -197,6 +206,8 @@ export const updateProfile = async (
 
 /*
  * GET MATCHED JOBS
+ *
+ * GET /api/jobs/matches/{candidateId}
  */
 
 export const getJobMatches = async (
@@ -214,6 +225,8 @@ export const getJobMatches = async (
 
 /*
  * GET FILTERED MATCHED JOBS
+ *
+ * GET /api/jobs/matches/{candidateId}/filter
  */
 
 export const getFilteredJobMatches = async (
@@ -276,8 +289,6 @@ export const getFilteredJobMatches = async (
  * INTERNET JOB SEARCH - JOOBLE
  * ============================================================
  *
- * Backend:
- *
  * GET /api/job-search/internet/{candidateId}
  *
  * Parameters:
@@ -298,10 +309,6 @@ export const searchInternetJobs = async (
   const params = {};
 
 
-  /*
-   * Keyword
-   */
-
   if (
     filters.keywords &&
     filters.keywords.trim() !== ""
@@ -312,10 +319,6 @@ export const searchInternetJobs = async (
 
   }
 
-
-  /*
-   * Location
-   */
 
   if (
     filters.location &&
@@ -328,10 +331,6 @@ export const searchInternetJobs = async (
   }
 
 
-  /*
-   * Minimum salary
-   */
-
   if (
     filters.minSalary !== undefined &&
     filters.minSalary !== null &&
@@ -343,10 +342,6 @@ export const searchInternetJobs = async (
 
   }
 
-
-  /*
-   * Posted date
-   */
 
   if (
     filters.dateRangeDays !== undefined &&
@@ -382,6 +377,8 @@ export const searchInternetJobs = async (
 
 /*
  * UPLOAD RESUME
+ *
+ * POST /api/resumes/upload
  */
 
 export const uploadResume = async (
@@ -424,6 +421,8 @@ export const uploadResume = async (
 
 /*
  * GET RESUMES
+ *
+ * GET /api/resumes/{candidateId}
  */
 
 export const getResumes = async (
@@ -441,6 +440,8 @@ export const getResumes = async (
 
 /*
  * DELETE RESUME
+ *
+ * DELETE /api/resumes/{candidateId}/{resumeId}
  */
 
 export const deleteResume = async (
@@ -466,6 +467,8 @@ export const deleteResume = async (
 
 /*
  * APPLY FOR JOB
+ *
+ * POST /api/applications
  */
 
 export const applyForJob = async (
@@ -488,6 +491,8 @@ export const applyForJob = async (
 
 /*
  * GET APPLICATIONS
+ *
+ * GET /api/applications/{candidateId}
  */
 
 export const getApplications = async (

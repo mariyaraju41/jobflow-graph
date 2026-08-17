@@ -1,5 +1,9 @@
 package com.example.demo.config;
 
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
 import java.util.List;
 
 import org.springframework.context.annotation.Bean;
@@ -8,10 +12,16 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.RSAKey;
+import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 
 @Configuration
 public class SecurityConfig {
@@ -28,6 +38,54 @@ public class SecurityConfig {
 
 
     // ============================================================
+    // JWT ENCODER
+    // ============================================================
+
+    @Bean
+    public JwtEncoder jwtEncoder() {
+
+        try {
+
+            KeyPairGenerator generator =
+                    KeyPairGenerator.getInstance("RSA");
+
+            generator.initialize(2048);
+
+            KeyPair keyPair =
+                    generator.generateKeyPair();
+
+            RSAPublicKey publicKey =
+                    (RSAPublicKey) keyPair.getPublic();
+
+            RSAPrivateKey privateKey =
+                    (RSAPrivateKey) keyPair.getPrivate();
+
+            RSAKey rsaKey =
+                    new RSAKey.Builder(publicKey)
+                            .privateKey(privateKey)
+                            .keyID("jobflow-key")
+                            .build();
+
+            JWKSet jwkSet =
+                    new JWKSet(rsaKey);
+
+            ImmutableJWKSet<com.nimbusds.jose.proc.SecurityContext>
+                    jwkSource =
+                    new ImmutableJWKSet<>(jwkSet);
+
+            return new NimbusJwtEncoder(jwkSource);
+
+        } catch (Exception e) {
+
+            throw new IllegalStateException(
+                    "Failed to create JWT encoder",
+                    e
+            );
+        }
+    }
+
+
+    // ============================================================
     // CORS
     // ============================================================
 
@@ -37,18 +95,12 @@ public class SecurityConfig {
         CorsConfiguration configuration =
                 new CorsConfiguration();
 
-        /*
-         * Allow the current Vercel deployment,
-         * future Vercel preview deployments,
-         * and local development.
-         */
         configuration.setAllowedOriginPatterns(
                 List.of(
                         "https://*.vercel.app",
                         "http://localhost:5173"
                 )
         );
-
 
         configuration.setAllowedMethods(
                 List.of(
@@ -61,37 +113,23 @@ public class SecurityConfig {
                 )
         );
 
-
-        /*
-         * JWT is sent through Authorization header.
-         */
         configuration.setAllowedHeaders(
                 List.of("*")
         );
 
-
         configuration.setExposedHeaders(
-                List.of(
-                        "Authorization"
-                )
+                List.of("Authorization")
         );
 
-
-        /*
-         * We are not using cookies for JWT.
-         */
         configuration.setAllowCredentials(false);
-
 
         UrlBasedCorsConfigurationSource source =
                 new UrlBasedCorsConfigurationSource();
-
 
         source.registerCorsConfiguration(
                 "/**",
                 configuration
         );
-
 
         return source;
     }
@@ -107,75 +145,44 @@ public class SecurityConfig {
 
         http
 
-                /*
-                 * Enable CORS.
-                 */
                 .cors(cors -> cors
                         .configurationSource(
                                 corsConfigurationSource()
                         )
                 )
 
-
-                /*
-                 * REST API.
-                 */
                 .csrf(csrf ->
                         csrf.disable()
                 )
 
-
-                /*
-                 * Authorization rules.
-                 */
                 .authorizeHttpRequests(auth -> auth
 
-                        /*
-                         * Browser preflight.
-                         */
                         .requestMatchers(
                                 HttpMethod.OPTIONS,
                                 "/**"
                         )
                         .permitAll()
 
-
-                        /*
-                         * Backend health endpoints.
-                         */
                         .requestMatchers(
                                 "/",
                                 "/api/health"
                         )
                         .permitAll()
 
-
-                        /*
-                         * Public authentication.
-                         */
                         .requestMatchers(
                                 "/api/auth/register",
                                 "/api/auth/login"
                         )
                         .permitAll()
 
-
-                        /*
-                         * Database test endpoints.
-                         */
                         .requestMatchers(
                                 "/api/database/**"
                         )
                         .permitAll()
 
-
-                        /*
-                         * Everything else remains protected.
-                         */
                         .anyRequest()
                         .authenticated()
                 );
-
 
         return http.build();
     }

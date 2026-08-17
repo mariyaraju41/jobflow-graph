@@ -19,7 +19,9 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 
@@ -32,7 +34,6 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-
         return new BCryptPasswordEncoder();
     }
 
@@ -46,13 +47,13 @@ public class SecurityConfig {
 
         try {
 
-            KeyPairGenerator generator =
+            KeyPairGenerator keyPairGenerator =
                     KeyPairGenerator.getInstance("RSA");
 
-            generator.initialize(2048);
+            keyPairGenerator.initialize(2048);
 
             KeyPair keyPair =
-                    generator.generateKeyPair();
+                    keyPairGenerator.generateKeyPair();
 
             RSAPublicKey publicKey =
                     (RSAPublicKey) keyPair.getPublic();
@@ -60,20 +61,50 @@ public class SecurityConfig {
             RSAPrivateKey privateKey =
                     (RSAPrivateKey) keyPair.getPrivate();
 
+
             RSAKey rsaKey =
                     new RSAKey.Builder(publicKey)
+
                             .privateKey(privateKey)
-                            .keyID("jobflow-key")
+
+                            /*
+                             * Explicitly mark this as a
+                             * signing key.
+                             */
+                            .keyUse(
+                                    KeyUse.SIGNATURE
+                            )
+
+                            /*
+                             * Explicitly tell Nimbus
+                             * which signing algorithm
+                             * this key supports.
+                             */
+                            .algorithm(
+                                    JWSAlgorithm.RS256
+                            )
+
+                            .keyID(
+                                    "jobflow-rsa-key"
+                            )
+
                             .build();
+
 
             JWKSet jwkSet =
                     new JWKSet(rsaKey);
 
+
             ImmutableJWKSet<com.nimbusds.jose.proc.SecurityContext>
                     jwkSource =
-                    new ImmutableJWKSet<>(jwkSet);
+                    new ImmutableJWKSet<>(
+                            jwkSet
+                    );
 
-            return new NimbusJwtEncoder(jwkSource);
+
+            return new NimbusJwtEncoder(
+                    jwkSource
+            );
 
         } catch (Exception e) {
 
@@ -95,12 +126,14 @@ public class SecurityConfig {
         CorsConfiguration configuration =
                 new CorsConfiguration();
 
+
         configuration.setAllowedOriginPatterns(
                 List.of(
                         "https://*.vercel.app",
                         "http://localhost:5173"
                 )
         );
+
 
         configuration.setAllowedMethods(
                 List.of(
@@ -113,30 +146,40 @@ public class SecurityConfig {
                 )
         );
 
+
         configuration.setAllowedHeaders(
                 List.of("*")
         );
 
+
         configuration.setExposedHeaders(
-                List.of("Authorization")
+                List.of(
+                        "Authorization"
+                )
         );
 
-        configuration.setAllowCredentials(false);
+
+        configuration.setAllowCredentials(
+                false
+        );
+
 
         UrlBasedCorsConfigurationSource source =
                 new UrlBasedCorsConfigurationSource();
+
 
         source.registerCorsConfiguration(
                 "/**",
                 configuration
         );
 
+
         return source;
     }
 
 
     // ============================================================
-    // SECURITY FILTER CHAIN
+    // SECURITY
     // ============================================================
 
     @Bean
@@ -145,8 +188,8 @@ public class SecurityConfig {
 
         http
 
-                .cors(cors -> cors
-                        .configurationSource(
+                .cors(cors ->
+                        cors.configurationSource(
                                 corsConfigurationSource()
                         )
                 )
@@ -155,7 +198,8 @@ public class SecurityConfig {
                         csrf.disable()
                 )
 
-                .authorizeHttpRequests(auth -> auth
+                .authorizeHttpRequests(auth ->
+                        auth
 
                         .requestMatchers(
                                 HttpMethod.OPTIONS,
@@ -183,6 +227,7 @@ public class SecurityConfig {
                         .anyRequest()
                         .authenticated()
                 );
+
 
         return http.build();
     }

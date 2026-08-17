@@ -3,7 +3,7 @@ package com.example.demo.service;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
-import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
@@ -25,30 +25,45 @@ public class JwtService {
 
         Instant now = Instant.now();
 
+
         JwtClaimsSet claims =
                 JwtClaimsSet.builder()
+
                         .subject(email)
-                        .claim("candidateId", candidateId)
-                        .issuedAt(now)
-                        .expiresAt(
-                            now.plus(
-                                24,
-                                ChronoUnit.HOURS
-                            )
+
+                        .claim(
+                                "candidateId",
+                                candidateId
                         )
+
+                        .issuedAt(now)
+
+                        .expiresAt(
+                                now.plus(
+                                        24,
+                                        ChronoUnit.HOURS
+                                )
+                        )
+
                         .build();
 
+
+        /*
+         * SecurityConfig creates an RSA signing key,
+         * so the JWT must use RS256.
+         */
         JwsHeader header =
                 JwsHeader.with(
-                    MacAlgorithm.HS256
+                        SignatureAlgorithm.RS256
                 ).build();
+
 
         return jwtEncoder
                 .encode(
-                    JwtEncoderParameters.from(
-                        header,
-                        claims
-                    )
+                        JwtEncoderParameters.from(
+                                header,
+                                claims
+                        )
                 )
                 .getTokenValue();
     }

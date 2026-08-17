@@ -12,7 +12,9 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
@@ -39,80 +41,86 @@ public class SecurityConfig {
 
 
     // ============================================================
-    // JWT ENCODER
+    // RSA KEY PAIR
     // ============================================================
 
     @Bean
-    public JwtEncoder jwtEncoder() {
+    public KeyPair keyPair() {
 
         try {
 
-            KeyPairGenerator keyPairGenerator =
+            KeyPairGenerator generator =
                     KeyPairGenerator.getInstance("RSA");
 
-            keyPairGenerator.initialize(2048);
+            generator.initialize(2048);
 
-            KeyPair keyPair =
-                    keyPairGenerator.generateKeyPair();
-
-            RSAPublicKey publicKey =
-                    (RSAPublicKey) keyPair.getPublic();
-
-            RSAPrivateKey privateKey =
-                    (RSAPrivateKey) keyPair.getPrivate();
-
-
-            RSAKey rsaKey =
-                    new RSAKey.Builder(publicKey)
-
-                            .privateKey(privateKey)
-
-                            /*
-                             * Explicitly mark this as a
-                             * signing key.
-                             */
-                            .keyUse(
-                                    KeyUse.SIGNATURE
-                            )
-
-                            /*
-                             * Explicitly tell Nimbus
-                             * which signing algorithm
-                             * this key supports.
-                             */
-                            .algorithm(
-                                    JWSAlgorithm.RS256
-                            )
-
-                            .keyID(
-                                    "jobflow-rsa-key"
-                            )
-
-                            .build();
-
-
-            JWKSet jwkSet =
-                    new JWKSet(rsaKey);
-
-
-            ImmutableJWKSet<com.nimbusds.jose.proc.SecurityContext>
-                    jwkSource =
-                    new ImmutableJWKSet<>(
-                            jwkSet
-                    );
-
-
-            return new NimbusJwtEncoder(
-                    jwkSource
-            );
+            return generator.generateKeyPair();
 
         } catch (Exception e) {
 
             throw new IllegalStateException(
-                    "Failed to create JWT encoder",
+                    "Failed to generate RSA key pair",
                     e
             );
         }
+    }
+
+
+    // ============================================================
+    // JWT ENCODER
+    // ============================================================
+
+    @Bean
+    public JwtEncoder jwtEncoder(
+            KeyPair keyPair) {
+
+        RSAPublicKey publicKey =
+                (RSAPublicKey) keyPair.getPublic();
+
+        RSAPrivateKey privateKey =
+                (RSAPrivateKey) keyPair.getPrivate();
+
+
+        RSAKey rsaKey =
+                new RSAKey.Builder(publicKey)
+                        .privateKey(privateKey)
+                        .keyUse(KeyUse.SIGNATURE)
+                        .algorithm(JWSAlgorithm.RS256)
+                        .keyID("jobflow-rsa-key")
+                        .build();
+
+
+        JWKSet jwkSet =
+                new JWKSet(rsaKey);
+
+
+        ImmutableJWKSet<com.nimbusds.jose.proc.SecurityContext>
+                jwkSource =
+                new ImmutableJWKSet<>(
+                        jwkSet
+                );
+
+
+        return new NimbusJwtEncoder(
+                jwkSource
+        );
+    }
+
+
+    // ============================================================
+    // JWT DECODER
+    // ============================================================
+
+    @Bean
+    public JwtDecoder jwtDecoder(
+            KeyPair keyPair) {
+
+        RSAPublicKey publicKey =
+                (RSAPublicKey) keyPair.getPublic();
+
+        return NimbusJwtDecoder
+                .withPublicKey(publicKey)
+                .build();
     }
 
 
@@ -153,15 +161,11 @@ public class SecurityConfig {
 
 
         configuration.setExposedHeaders(
-                List.of(
-                        "Authorization"
-                )
+                List.of("Authorization")
         );
 
 
-        configuration.setAllowCredentials(
-                false
-        );
+        configuration.setAllowCredentials(false);
 
 
         UrlBasedCorsConfigurationSource source =
@@ -179,7 +183,7 @@ public class SecurityConfig {
 
 
     // ============================================================
-    // SECURITY
+    // SECURITY FILTER CHAIN
     // ============================================================
 
     @Bean
@@ -188,44 +192,77 @@ public class SecurityConfig {
 
         http
 
+                // ------------------------------------------------
+                // CORS
+                // ------------------------------------------------
+
                 .cors(cors ->
                         cors.configurationSource(
                                 corsConfigurationSource()
                         )
                 )
 
+
+                // ------------------------------------------------
+                // CSRF
+                // ------------------------------------------------
+
                 .csrf(csrf ->
                         csrf.disable()
                 )
 
-                .authorizeHttpRequests(auth ->
-                        auth
 
+                // ------------------------------------------------
+                // AUTHORIZATION
+                // ------------------------------------------------
+
+                .authorizeHttpRequests(auth -> auth
+
+                        // Preflight
                         .requestMatchers(
                                 HttpMethod.OPTIONS,
                                 "/**"
                         )
                         .permitAll()
 
+
+                        // Public endpoints
                         .requestMatchers(
                                 "/",
-                                "/api/health"
-                        )
-                        .permitAll()
-
-                        .requestMatchers(
+                                "/api/health",
                                 "/api/auth/register",
                                 "/api/auth/login"
                         )
                         .permitAll()
 
+
+                        // Database test endpoints
                         .requestMatchers(
                                 "/api/database/**"
                         )
                         .permitAll()
 
+
+                        // Everything else requires JWT
                         .anyRequest()
                         .authenticated()
+                )
+
+
+                // ------------------------------------------------
+                // JWT RESOURCE SERVER
+                // ------------------------------------------------
+
+                .oauth2ResourceServer(
+                        oauth2 ->
+                                oauth2.jwt(
+                                        jwt ->
+                                                jwt.decoder(
+                                                        jwtDecoder(
+                                                                keyPair()
+                                                        )
+                                                )
+                                )
                 );
 
 

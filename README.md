@@ -2,7 +2,23 @@
 
 JobFlow is a job discovery and application tracking platform backed by a graph database built for the WEXA AI / CognoDB take-home assignment. It connects candidates, skills, resumes, jobs, and applications as a graph so the application can answer questions that depend on relationships such as which jobs best match a candidate's extracted skills and which jobs a candidate has applied to.
 
-> Assignment basis: the WEXA AI brief asks for a complete graph-backed application using CognoDB, a thoughtful graph model, realistic seed data, parameterized Cypher queries including multi-hop traversal, a usable web UI, environment-based secrets, a README with a graph diagram/setup/query explanations/screenshots, and a hosted demo.
+## Why We Chose This Problem
+
+Finding the right job is a common problem for students and job seekers, especially when a candidate has to compare their skills with hundreds of different job requirements.
+
+Traditional job searching usually depends on manually checking job descriptions, comparing required skills, keeping track of applications, and remembering which jobs have already been applied to. This becomes difficult when a candidate is searching across multiple job sites and locations.
+
+We chose this problem because it combines several real-world relationships:
+
+- candidates have multiple skills
+- resumes contain different skills and experience
+- jobs require different combinations of skills
+- candidates can apply to multiple jobs
+- applications need to be tracked over time
+
+JobFlow brings these relationships together in one application. It uses the candidate's resume and skills to find relevant jobs, calculate skill matches, search external job opportunities, redirect the candidate to the actual application page, and track the application afterward.
+
+This makes job search more organized for the candidate and provides a practical use case where graph relationships are important.
 
 ## Live Demo
 
@@ -71,7 +87,6 @@ CognoDB exposes openCypher over Bolt and supports official Neo4j drivers, includ
 
 ## Architecture
 
-```text
                            +──────────────────────────+
                            |        JobFlow UI        |
                            |    React + Vite + Axios  |
@@ -97,8 +112,8 @@ A simple project structure and graph data model are included below.
 
 ## Graph Data Model
 
-```text
-(:Candidate)
+
+(Candidate)
     |
     |-──[:HAS_SKILL]──────────►(:Skill)
     |                              ^
@@ -116,7 +131,7 @@ A simple project structure and graph data model are included below.
 Candidate ──[:SUBMITTED]──► Application ──[:FOR_JOB]──► Job
 Candidate ──[:HAS_SKILL]──────────────────────────────► Skill
 Job       ──[:REQUIRES]───────────────────────────────► Skill
-```
+
 
 ### Main entities
 
@@ -130,10 +145,10 @@ Job       ──[:REQUIRES]─────────────────�
 
 ## Relationship Model
 
-- `Candidate -[:HAS_SKILL]-> Skill`
-- `Job -[:REQUIRES]-> Skill`
-- `Candidate -[:SUBMITTED]-> Application`
-- `Application -[:FOR_JOB]-> Job`
+- Candidate -[:HAS_SKILL]-> Skill`
+- Job -[:REQUIRES]-> Skill`
+-Candidate -[:SUBMITTED]-> Application`
+- Application -[:FOR_JOB]-> Job`
 
 For externally discovered jobs, JobFlow can create/merge a `Job` node and record an `Application` with `status = APPLIED` before opening the external application URL.
 
@@ -143,15 +158,15 @@ The project uses parameterized Cypher through the Neo4j driver rather than strin
 
 ### 1. Candidate skills
 
-```cypher
+cypher
 MATCH (c:Candidate {id: $candidateId})
       -[:HAS_SKILL]->(s:Skill)
 RETURN DISTINCT s.name AS skill;
-```
+
 
 ### 2. Job match calculation
 
-```cypher
+cypher
 MATCH (c:Candidate {id: $candidateId})
 MATCH (j:Job)-[:REQUIRES]->(required:Skill)
 
@@ -186,13 +201,13 @@ RETURN
         (toFloat(size(matchedSkills)) / size(requiredSkills)) * 100
     ) AS matchPercentage
 ORDER BY matchPercentage DESC;
-```
+
 
 ### 3. Multi-hop application tracking query
 
 This traverses more than one relationship and connects a candidate to the jobs they applied for:
 
-```cypher
+cypher
 MATCH (c:Candidate {id: $candidateId})
       -[:SUBMITTED]->(a:Application)
       -[:FOR_JOB]->(j:Job)
@@ -205,13 +220,13 @@ RETURN
     a.status AS status,
     a.createdAt AS createdAt
 ORDER BY a.createdAt DESC;
-```
 
-### 4. External-application tracking
+
+ 4. External-application tracking
 
 The external application flow uses a graph write that associates the candidate, discovered job, and application:
 
-```cypher
+cypher
 MATCH (c:Candidate {id: $candidateId})
 MERGE (j:Job {id: $jobId})
 SET
@@ -230,9 +245,9 @@ SET
 
 MERGE (c)-[:SUBMITTED]->(a)
 MERGE (a)-[:FOR_JOB]->(j);
-```
 
-## Key Features
+
+Key Features
 
 ### Authentication
 
@@ -280,7 +295,7 @@ MERGE (a)-[:FOR_JOB]->(j);
 
 ## Project Structure
 
-```text
+text
 jobflow-graph/
 |-── frontend/
 |   |-── src/
@@ -319,7 +334,7 @@ jobflow-graph/
 |   +── mvnw.cmd
 |
 +── README.md
-```
+
 
 ## Environment Variables
 

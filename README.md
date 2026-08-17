@@ -342,16 +342,16 @@ Secrets are intentionally loaded from environment variables rather than committe
 
 Backend environment variables:
 
-```text
+
 COGNODB_URI=bolt+s://<instance-id>.databases.cognodb.cloud
 COGNODB_USERNAME=cognodb
 COGNODB_PASSWORD=<your-cognodb-password>
 JOOBLE_API_KEY=<your-jooble-api-key>
-```
+
 
 The application reads them from `application.properties`:
 
-```properties
+
 spring.application.name=demo
 server.port=${PORT:1918}
 
@@ -359,7 +359,7 @@ spring.neo4j.uri=${COGNODB_URI}
 spring.neo4j.authentication.username=${COGNODB_USERNAME}
 spring.neo4j.authentication.password=${COGNODB_PASSWORD}
 jooble.api.key=${JOOBLE_API_KEY}
-```
+
 
 ## CognoDB Setup
 
@@ -377,9 +377,8 @@ The assignment notes that the free instance is intentionally small (0.5 vCPU bur
 
 The repository includes:
 
-```text
 demo-job/src/main/resources/cypher/seed.cypher
-```
+
 
 Use this script to load realistic/demo graph data before testing matching and traversal flows. The assignment requires realistic seed data loaded by a script included in the repository.
 
@@ -395,28 +394,26 @@ Use this script to load realistic/demo graph data before testing matching and tr
 
 ### 1. Clone
 
-```bash
+
 git clone https://github.com/mariyaraju41/jobflow-graph.git
 cd jobflow-graph
-```
+
 
 ### 2. Configure backend environment variables
 
 Windows PowerShell example:
 
-```powershell
+
 $env:COGNODB_URI="bolt+s://<instance-id>.databases.cognodb.cloud"
 $env:COGNODB_USERNAME="cognodb"
 $env:COGNODB_PASSWORD="<your-password>"
 $env:JOOBLE_API_KEY="<your-jooble-key>"
-```
 
 ### 3. Run backend
 
-```powershell
 cd demo-job
 ./mvnw spring-boot:run
-```
+
 
 The local API runs on port `1918` by default.
 
@@ -424,11 +421,9 @@ The local API runs on port `1918` by default.
 
 In a second terminal:
 
-```powershell
 cd frontend
 npm install
-npm run dev
-```
+npm run dev```
 
 The Vite development server normally runs on `http://localhost:5173`.
 
@@ -444,72 +439,72 @@ The frontend is a Vite/React application deployed on Vercel.
 
 ### Production URLs
 
-```text
+
 Frontend: https://jobflow-graph-63gt.vercel.app
 Backend:  https://jobflow-graph.onrender.com
 API:      https://jobflow-graph.onrender.com/api
-```
+
 
 ## API Overview
 
 ### Authentication
 
-```text
+
 POST /api/auth/register
 POST /api/auth/login
-```
+
 
 ### Profile
 
-```text
+
 GET /api/profile/{candidateId}
 PUT /api/profile/{candidateId}
-```
+
 
 ### Job matching
 
-```text
+
 GET /api/jobs/matches/{candidateId}
 GET /api/jobs/matches/{candidateId}/filter
-```
+
 
 ### Internet job search
 
-```text
+
 GET /api/job-search/internet/{candidateId}
-```
+
 
 Supported query parameters include:
 
-```text
+
 keywords
 location
 minSalary
 dateRangeDays
-```
+
 
 ### Resumes
 
-```text
+
 POST   /api/resumes/upload
 GET    /api/resumes/{candidateId}
 DELETE /api/resumes/{candidateId}/{resumeId}
-```
+
 
 ### Applications
 
-```text
+
 POST /api/applications
 POST /api/applications/external
 GET  /api/applications/{candidateId}
-```
+
 
 ### Health
 
-```text
-GET /
+
+
 GET /api/health
-```
+
 
 ## Error Handling & Empty States
 
@@ -526,29 +521,9 @@ JobFlow is designed to handle common failure states without silently failing:
 
 The assignment explicitly evaluates graceful database-unreachable handling, clean loading/empty/error states, and thoughtful UX.
 
-## UI Screenshots
 
-Add the final hosted UI screenshots here before submission. The assignment explicitly asks the README to include screenshots of the UI.
 
-Suggested screenshots:
 
-1. Login / registration
-2. Job dashboard with match percentages
-3. Resume upload and extracted skills
-4. Live job search with multiple locations
-5. Job result with **Apply** button
-6. Application tracker showing `APPLIED`
-7. Profile page
-
-Example Markdown placeholders:
-
-```md
-![Login](docs/screenshots/login.png)
-![Dashboard](docs/screenshots/dashboard.png)
-![Resume](docs/screenshots/resume.png)
-![Job Search](docs/screenshots/job-search.png)
-![Applications](docs/screenshots/applications.png)
-```
 
 ## Design / UX Highlights
 
@@ -598,17 +573,6 @@ This project was built against the WEXA AI take-home brief, which asks candidate
 
 The brief also states that AI coding assistants are permitted, provided the candidate can explain and defend the implementation during the follow-up interview.
 
-## Submission
-
-The assignment specifies sending the GitHub repository URL and hosted demo link (if available) to `hr@wexa.ai` with the subject:
-
-```text
-CognoDB Assignment 2 - <Your Name>
-```
-
-It also asks candidates to keep the CognoDB instance running until the evaluation is complete.
-
----
 
 **Repository:** https://github.com/mariyaraju41/jobflow-graph
 
